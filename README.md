@@ -43,7 +43,7 @@ Household Finance Hub is a [Next.js](https://nextjs.org/) codebase that runs two
 | **Framework** | Next.js `15.5.15` (App Router) |
 | **Language** | TypeScript `5.9.3` (lockfile); React `18.3.1` (lockfile) |
 | **Styling** | Tailwind CSS `3.4.19` (lockfile), `tailwindcss-animate`, `tw-animate-css`, `tailwind-merge`, `class-variance-authority` |
-| **Database** | MongoDB (connection URIs in env; logical DB names e.g. `savings-tracker`, `kids-account` in seed defaults) |
+| **Database** | MongoDB (connection URIs in env; database name is taken from the URI path, e.g. `savings-tracker`, `kids-account`) |
 | **ORM / ODM** | Mongoose `^9.4.1` |
 | **Auth** | NextAuth.js `^4.24.13` (credentials provider), `bcryptjs` `^3.0.3` |
 | **Charts** | Recharts `^3.8.1` |
@@ -65,7 +65,6 @@ Top levels (excluding `.git`, `node_modules`, and build output such as `.next`):
 ├── app/                    # Next.js App Router: pages, layouts, global styles, fonts
 ├── components/             # React UI: layouts, feature clients, auth, shadcn-style ui/
 ├── lib/                    # DB connections, Mongoose models, auth, summaries, schemas, utils
-├── scripts/                # CLI: seed, create-user, hash-password (tsx)
 ├── types/                  # TypeScript augmentations (e.g. next-auth)
 ├── middleware.ts           # JWT gate and public route exceptions
 ├── next.config.mjs
@@ -77,8 +76,9 @@ Top levels (excluding `.git`, `node_modules`, and build output such as `.next`):
 - **`app/`** — Routes: `/` hub, `/login`, `/auth/setup`, `savings/*`, `kids/*`, and `api/*` (NextAuth, savings, kids).
 - **`components/`** — Reusable UI and client components per feature (dashboard, entries, kids, layout shells, etc.).
 - **`lib/`** — `db-savings` / `db-kids` connections, `models/savings` and `models/kids`, auth config, business logic.
-- **`scripts/`** — Database seeding and user utilities run via `npm`/`tsx`.
 - **`types/`** — Shared type extensions for the compiler.
+
+Optional local CLI files under `scripts/` are listed in `.gitignore` and are not part of the published tree.
 
 ## 5. Prerequisites
 
@@ -138,23 +138,13 @@ Use this order so auth/database dependencies are ready before the app starts.
 
    Ensure URIs in `.env.local` point to reachable databases.
 
-5. **Seed module data**
-
-   ```bash
-   npm run seed:savings
-   npm run seed:kids
-   ```
-
-   - `seed:savings` clears and repopulates savings collections: monthly entries, deductions, account distributions, lines of credit, and settings.
-   - `seed:kids` clears and repopulates kids collections: transactions and kids settings.
-
-6. **Run development server**
+5. **Run development server**
 
    ```bash
    npm run dev
    ```
 
-7. **Open the app**
+6. **Open the app**
 
    - [http://localhost:3000](http://localhost:3000)
 
@@ -173,14 +163,6 @@ Bootstrap is mandatory. Until one `User` document exists, you cannot establish a
   - If count is `0`, it renders `SetupForm`; if count is `>0`, it blocks setup and points to `/login`.
   - Form submit calls `POST /api/savings/auth/bootstrap`; route creates first user with role `admin` only when user count is still `0`.
 
-- **Path B: CLI script**
-  - Command:
-    ```bash
-    npm run create-user -- <email> <password> [admin|user]
-    ```
-  - Script: `scripts/create-user.ts`
-  - Behavior: connects to savings DB, hashes password with bcrypt cost `12`, inserts user, exits.
-
 ## 9. Available Scripts
 
 | Script | Command | Description |
@@ -189,11 +171,8 @@ Bootstrap is mandatory. Until one `User` document exists, you cannot establish a
 | `build` | `npm run build` | Compiles production assets/server bundles. |
 | `start` | `npm run start` | Runs the compiled production build. |
 | `lint` | `npm run lint` | Executes Next.js ESLint checks. |
-| `seed` | `npm run seed` | Convenience alias for `seed:savings`. |
-| `seed:savings` | `npm run seed:savings` | Recreates savings seed state in the savings DB (`scripts/seed-savings.ts`). |
-| `seed:kids` | `npm run seed:kids` | Recreates kids seed state in the kids DB (`scripts/seed-kids.ts`). |
-| `hash-password` | `npm run hash-password -- <password>` | One-off bcrypt hash generation (cost factor 12). |
-| `create-user` | `npm run create-user -- <email> <password> [admin\|user]` | Inserts a user in savings DB for sign-in bootstrap/testing. |
+
+`package.json` may define additional `tsx scripts/…` helpers (seed, `create-user`, etc.); those files are intentionally omitted from git (see `.gitignore`). This README documents only the scripts that ship with the repository.
 
 ## 10. Database Architecture
 
@@ -208,7 +187,7 @@ Savings models are declared in `lib/models/savings/` and bound to `getSavingsCon
 - **`lineofcredits`** — `LineOfCredit`
 - **`settings`** — `Settings` (starting balance, partner names)
 
-Default local seed target is `mongodb://localhost:27017/savings-tracker` when no env URI is provided.
+Example local URI shape: `mongodb://localhost:27017/savings-tracker` (set via env, not hardcoded in app code).
 
 ### `kids-account` (kids connection)
 
@@ -217,7 +196,7 @@ Kids models are declared in `lib/models/kids/` and bound to `getKidsConnection()
 - **`transactions`** — `Transaction` (income/expense ledger, categories, tags, carry-forward flag)
 - **`kidssettings`** — `KidsSettings` (account name, owner/partner, currency)
 
-Default local seed target is `mongodb://localhost:27017/kids-account` when no env URI is provided.
+Example local URI shape: `mongodb://localhost:27017/kids-account`.
 
 ### Why two databases?
 
@@ -252,8 +231,7 @@ Request/auth lifecycle:
 4. **Public matcher exceptions**
    - Unprotected paths: `login`, `auth/setup`, `api/auth/*`, `api/savings/auth/bootstrap`, Next static/image assets, favicon, and common image extensions.
 5. **Password hashing locations**
-   - `app/api/savings/auth/bootstrap/route.ts` and `scripts/create-user.ts` hash with bcrypt cost `12`.
-   - `scripts/hash-password.ts` is a standalone helper for generating compatible hashes.
+   - `app/api/savings/auth/bootstrap/route.ts` hashes with bcrypt cost `12` when creating the first user.
 
 ## 12. Deployment (Vercel)
 
