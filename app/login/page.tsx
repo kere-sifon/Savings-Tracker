@@ -7,12 +7,13 @@ import { User } from "@/lib/models/savings/User";
 import { LoginForm } from "@/components/auth/login-form";
 
 type Props = {
-  searchParams: { callbackUrl?: string };
+  searchParams: Promise<{ callbackUrl?: string }>;
 };
 
 export default async function LoginPage({ searchParams }: Props) {
   const session = await getServerSession(authOptions);
-  const callbackUrl = safeCallbackUrl(searchParams.callbackUrl, "/");
+  const sp = await searchParams;
+  const callbackUrl = safeCallbackUrl(sp.callbackUrl, "/");
   if (session) {
     redirect(callbackUrl);
   }

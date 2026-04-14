@@ -4,11 +4,12 @@ import { MonthlyEntry } from "@/lib/models/savings/MonthlyEntry";
 import { EntryForm } from "@/components/entries/EntryForm";
 import type { MonthlyEntryInput } from "@/lib/schemas/entry";
 
-type Props = { params: { id: string } };
+type Props = { params: Promise<{ id: string }> };
 
 export default async function EditEntryPage({ params }: Props) {
+  const { id } = await params;
   await connectDB();
-  const doc = await MonthlyEntry.findById(params.id).lean();
+  const doc = await MonthlyEntry.findById(id).lean();
   if (!doc) notFound();
 
   const defaults: MonthlyEntryInput = {

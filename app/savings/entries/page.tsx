@@ -16,16 +16,17 @@ export const dynamic = "force-dynamic";
 export default async function EntriesPage({
   searchParams,
 }: {
-  searchParams: SearchParams;
+  searchParams: Promise<SearchParams>;
 }) {
+  const sp = await searchParams;
   await connectDB();
   const now = new Date();
   const currentYear = now.getFullYear();
 
-  const viewAll = searchParams.view === "all";
-  const page = Math.max(1, parseInt(searchParams.page || "1", 10));
-  const yearFromQuery = searchParams.year
-    ? parseInt(searchParams.year, 10)
+  const viewAll = sp.view === "all";
+  const page = Math.max(1, parseInt(sp.page || "1", 10));
+  const yearFromQuery = sp.year
+    ? parseInt(sp.year, 10)
     : NaN;
   const selectedYear = !Number.isNaN(yearFromQuery) ? yearFromQuery : currentYear;
 

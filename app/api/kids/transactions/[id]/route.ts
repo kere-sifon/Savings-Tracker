@@ -18,10 +18,10 @@ function parseDateInput(v: string | null | undefined): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-export async function GET(
-  _req: Request,
-  { params }: { params: { id: string } },
-) {
+type RouteCtx = { params: Promise<{ id: string }> };
+
+export async function GET(_req: Request, context: RouteCtx) {
+  const params = await context.params;
   try {
     await connectKidsDB();
     if (!mongoose.isValidObjectId(params.id)) {
@@ -36,10 +36,8 @@ export async function GET(
   }
 }
 
-export async function PUT(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function PUT(req: Request, context: RouteCtx) {
+  const params = await context.params;
   try {
     await connectKidsDB();
     if (!mongoose.isValidObjectId(params.id)) {
@@ -86,10 +84,8 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function DELETE(_req: Request, context: RouteCtx) {
+  const params = await context.params;
   try {
     await connectKidsDB();
     if (!mongoose.isValidObjectId(params.id)) {

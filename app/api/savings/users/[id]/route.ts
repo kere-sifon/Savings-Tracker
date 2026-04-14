@@ -15,9 +15,10 @@ const patchSchema = z
     message: "At least one field required",
   });
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
 export async function PATCH(request: NextRequest, { params }: Params) {
+  const { id } = await params;
   const gate = await requireAdminSession();
   if (!gate.ok) return gate.response;
   try {
@@ -30,7 +31,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         { status: 400 },
       );
     }
-    const target = await User.findById(params.id);
+    const target = await User.findById(id);
     if (!target) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -70,18 +71,19 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 }
 
 export async function DELETE(_request: NextRequest, { params }: Params) {
+  const { id } = await params;
   const gate = await requireAdminSession();
   if (!gate.ok) return gate.response;
   const adminId = gate.session.user.id;
   try {
     await connectDB();
-    if (params.id === adminId) {
+    if (id === adminId) {
       return NextResponse.json(
         { error: "You cannot delete your own account" },
         { status: 400 },
       );
     }
-    const target = await User.findById(params.id);
+    const target = await User.findById(id);
     if (!target) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -94,7 +96,7 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
         );
       }
     }
-    await User.deleteOne({ _id: params.id });
+    await User.deleteOne({ _id: id });
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error(e);
