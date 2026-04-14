@@ -40,7 +40,7 @@ Household Finance Hub is a [Next.js](https://nextjs.org/) codebase that runs two
 
 | Layer | Choice |
 | --- | --- |
-| **Framework** | Next.js `14.2.35` (App Router) |
+| **Framework** | Next.js `15.5.15` (App Router) |
 | **Language** | TypeScript `5.9.3` (lockfile); React `18.3.1` (lockfile) |
 | **Styling** | Tailwind CSS `3.4.19` (lockfile), `tailwindcss-animate`, `tw-animate-css`, `tailwind-merge`, `class-variance-authority` |
 | **Database** | MongoDB (connection URIs in env; logical DB names e.g. `savings-tracker`, `kids-account` in seed defaults) |
@@ -51,6 +51,10 @@ Household Finance Hub is a [Next.js](https://nextjs.org/) codebase that runs two
 | **Icons** | `lucide-react` `1.8.0` (resolved in lockfile) |
 | **Excel export** | `exceljs` `^4.4.0` |
 | **Deployment** | Vercel (typical; see [Deployment](#12-deployment-vercel)) |
+
+### Security and dependency updates
+
+The app tracks the **Next.js 15.5.x** release line (currently **`15.5.15`**, with **`eslint-config-next`** pinned to the same version) so framework and lint tooling stay on upstream security fixes for the App Router and React Server Components stack. After changing dependencies, run **`npm install`** and **`npm audit`**; when upgrading `next`, bump **`eslint-config-next`** to the matching version in `package.json`.
 
 ## 4. Project Structure
 
@@ -78,7 +82,7 @@ Top levels (excluding `.git`, `node_modules`, and build output such as `.next`):
 
 ## 5. Prerequisites
 
-- **Node.js**: No `engines` field or `.nvmrc` is present in this repo; use **Node.js 18 or newer** (Next.js 14 is compatible with modern LTS releases).
+- **Node.js**: No `.nvmrc` is checked in; Next.js `15.5.x` expects **`^18.18.0`**, **`^19.8.0`**, or **`>=20.0.0`** (see `node_modules/next/package.json` `engines` when upgrading).
 - **MongoDB**: Local instance or [MongoDB Atlas](https://www.mongodb.com/atlas) (or any reachable MongoDB deployment).
 - **Package manager**: **npm** (lockfile: `package-lock.json`). Other package managers can be used if you prefer.
 

@@ -9,11 +9,12 @@ export const dynamic = "force-dynamic";
 export default async function EditTransactionPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   await connectKidsDB();
-  if (!mongoose.isValidObjectId(params.id)) notFound();
-  const doc = await Transaction.findById(params.id).lean();
+  if (!mongoose.isValidObjectId(id)) notFound();
+  const doc = await Transaction.findById(id).lean();
   if (!doc) notFound();
 
   const dateStr = doc.date
@@ -26,7 +27,7 @@ export default async function EditTransactionPage({
         <h1 className="text-2xl font-bold tracking-tight">Edit transaction</h1>
       </div>
       <TransactionForm
-        transactionId={params.id}
+        transactionId={id}
         defaultValues={{
           date: dateStr,
           description: doc.description,

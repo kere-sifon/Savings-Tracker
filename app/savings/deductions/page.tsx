@@ -11,8 +11,9 @@ type SearchParams = { edit?: string; year?: string; month?: string };
 export default async function DeductionsPage({
   searchParams,
 }: {
-  searchParams: SearchParams;
+  searchParams: Promise<SearchParams>;
 }) {
+  const sp = await searchParams;
   await connectDB();
   const docs = await Deduction.find().lean();
   docs.sort((a, b) => -compareYearMonth(a, b));
@@ -46,9 +47,9 @@ export default async function DeductionsPage({
       </div>
       <DeductionsClient
         initial={initial}
-        prefillYear={searchParams.year}
-        prefillMonth={searchParams.month}
-        editId={searchParams.edit}
+        prefillYear={sp.year}
+        prefillMonth={sp.month}
+        editId={sp.edit}
       />
     </div>
   );
