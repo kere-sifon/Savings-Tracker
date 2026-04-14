@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    serverComponentsExternalPackages: ["mongoose", "xlsx"],
+    serverComponentsExternalPackages: ["mongoose", "exceljs"],
   },
   async redirects() {
     return [

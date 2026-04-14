@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { AccountDistribution } from "@/lib/models/savings/AccountDistribution";
@@ -13,6 +13,21 @@ export const dynamic = "force-dynamic";
 function iso(d: unknown): string {
   if (!d) return "";
   return new Date(d as string | Date).toISOString();
+}
+
+type SheetCell = string | number | boolean | null | undefined;
+
+function appendSheet(
+  workbook: ExcelJS.Workbook,
+  name: string,
+  headers: string[],
+  rows: Record<string, SheetCell>[],
+) {
+  const sheet = workbook.addWorksheet(name);
+  sheet.addRow(headers);
+  for (const row of rows) {
+    sheet.addRow(headers.map((header) => row[header] ?? ""));
+  }
 }
 
 export async function GET() {
@@ -32,7 +47,7 @@ export async function GET() {
       compareYearMonth(a, b),
     );
 
-    const wb = XLSX.utils.book_new();
+    const workbook = new ExcelJS.Workbook();
 
     const monthlyRows = entries.map((e) => ({
       Year: e.year,
@@ -42,14 +57,11 @@ export async function GET() {
       Note: e.note ?? "",
       "Updated (UTC)": iso(e.updatedAt),
     }));
-    XLSX.utils.book_append_sheet(
-      wb,
-      monthlyRows.length
-        ? XLSX.utils.json_to_sheet(monthlyRows)
-        : XLSX.utils.aoa_to_sheet([
-            ["Year", "Month", "Kere", "Ann", "Note", "Updated (UTC)"],
-          ]),
+    appendSheet(
+      workbook,
       "Monthly entries",
+      ["Year", "Month", "Kere", "Ann", "Note", "Updated (UTC)"],
+      monthlyRows,
     );
 
     const dedRows = deductions.map((d) => ({
@@ -59,14 +71,11 @@ export async function GET() {
       Description: d.description,
       "Updated (UTC)": iso(d.updatedAt),
     }));
-    XLSX.utils.book_append_sheet(
-      wb,
-      dedRows.length
-        ? XLSX.utils.json_to_sheet(dedRows)
-        : XLSX.utils.aoa_to_sheet([
-            ["Year", "Month", "Amount", "Description", "Updated (UTC)"],
-          ]),
+    appendSheet(
+      workbook,
       "Deductions",
+      ["Year", "Month", "Amount", "Description", "Updated (UTC)"],
+      dedRows,
     );
 
     const accRows = accountsRaw.map((a) => ({
@@ -74,12 +83,11 @@ export async function GET() {
       Amount: a.amount,
       "Updated (UTC)": iso(a.updatedAt),
     }));
-    XLSX.utils.book_append_sheet(
-      wb,
-      accRows.length
-        ? XLSX.utils.json_to_sheet(accRows)
-        : XLSX.utils.aoa_to_sheet([["Label", "Amount", "Updated (UTC)"]]),
+    appendSheet(
+      workbook,
       "Accounts",
+      ["Label", "Amount", "Updated (UTC)"],
+      accRows,
     );
 
     const locRows = locsRaw.map((l) => ({
@@ -87,28 +95,29 @@ export async function GET() {
       Balance: l.balance,
       "Updated (UTC)": iso(l.updatedAt),
     }));
-    XLSX.utils.book_append_sheet(
-      wb,
-      locRows.length
-        ? XLSX.utils.json_to_sheet(locRows)
-        : XLSX.utils.aoa_to_sheet([["Name", "Balance", "Updated (UTC)"]]),
+    appendSheet(
+      workbook,
       "Lines of credit",
+      ["Name", "Balance", "Updated (UTC)"],
+      locRows,
     );
 
     const s = settingsDoc.toObject();
-    XLSX.utils.book_append_sheet(
-      wb,
-      XLSX.utils.json_to_sheet([
+    appendSheet(
+      workbook,
+      "Settings",
+      ["Starting balance", "Partner 1 name", "Partner 2 name"],
+      [
         {
           "Starting balance": s.startingBalance,
           "Partner 1 name": s.partner1Name,
           "Partner 2 name": s.partner2Name,
         },
-      ]),
-      "Settings",
+      ],
     );
 
-    const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+    const arrayBuffer = await workbook.xlsx.writeBuffer();
+    const buf = Buffer.from(arrayBuffer);
     const filename = `savings-tracker-export-${new Date().toISOString().slice(0, 10)}.xlsx`;
 
     return new NextResponse(buf, {
